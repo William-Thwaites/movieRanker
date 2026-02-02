@@ -1,0 +1,520 @@
+// DOM Elements
+const navSearchInput = document.getElementById('navSearchInput');
+const modal = document.getElementById('modal');
+const modalBody = document.getElementById('modalBody');
+const closeModal = document.getElementById('closeModal');
+
+// Views
+const homeView = document.getElementById('homeView');
+const reviewsView = document.getElementById('reviewsView');
+const statsView = document.getElementById('statsView');
+const searchView = document.getElementById('searchView');
+
+// Event Listeners
+navSearchInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') handleNavSearch();
+});
+closeModal.addEventListener('click', () => modal.classList.add('hidden'));
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) modal.classList.add('hidden');
+});
+
+// Navigation
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const view = e.target.dataset.view;
+    switchView(view);
+  });
+});
+
+// Switch between views
+function switchView(viewName) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+
+  const viewMap = {
+    home: homeView,
+    reviews: reviewsView,
+    stats: statsView,
+    search: searchView
+  };
+
+  viewMap[viewName]?.classList.add('active');
+  document.querySelector(`[data-view="${viewName}"]`)?.classList.add('active');
+
+  if (viewName === 'reviews') loadMyReviews();
+  if (viewName === 'stats') loadStats();
+}
+
+// Load home page content
+async function loadHomePage() {
+  await Promise.all([
+    loadFeaturedCarousel(),
+    loadTrending(),
+    loadForYou(),
+    loadNewReleases()
+  ]);
+}
+
+// Load featured carousel (new releases)
+async function loadFeaturedCarousel() {
+  const container = document.getElementById('featuredCarousel');
+  container.innerHTML = '<div class="loading">Loading featured movies...</div>';
+
+  try {
+    const response = await fetch('/api/movies/newreleases');
+    const data = await response.json();
+    const topMovies = data.results.slice(0, 5);
+
+    container.innerHTML = `
+      <div class="carousel">
+        ${topMovies.map((movie, index) => `
+          <div class="carousel-item ${index === 0 ? 'active' : ''}" onclick="showMovieDetails(${movie.tmdbId})">
+            <img src="${movie.posterUrl || '/placeholder.jpg'}" alt="${movie.title}">
+            <div class="carousel-info">
+              <h2>${movie.title}</h2>
+              <p>${movie.overview}</p>
+              <span class="rating">⭐ ${movie.rating.toFixed(1)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="carousel-btn prev" onclick="moveCarousel(-1)">‹</button>
+      <button class="carousel-btn next" onclick="moveCarousel(1)">›</button>
+    `;
+
+    // Start auto-rotation after carousel is loaded
+    startCarouselAutoRotate();
+
+    // Pause on hover
+    container.addEventListener('mouseenter', stopCarouselAutoRotate);
+    container.addEventListener('mouseleave', startCarouselAutoRotate);
+  } catch (error) {
+    console.error('Featured carousel error:', error);
+    container.innerHTML = '<div class="error">Failed to load featured movies</div>';
+  }
+}
+
+// Carousel navigation
+let currentSlide = 0;
+let carouselInterval = null;
+
+function moveCarousel(direction) {
+  const items = document.querySelectorAll('.carousel-item');
+  const oldSlide = currentSlide;
+
+  // Calculate new slide index
+  currentSlide = (currentSlide + direction + items.length) % items.length;
+
+  // Remove all transition classes
+  items.forEach(item => {
+    item.classList.remove('active', 'prev');
+  });
+
+  // Set up transition based on direction
+  if (direction > 0) {
+    // Moving forward: old slide goes left, new slide comes from right
+    items[oldSlide].classList.add('prev');
+  } else {
+    // Moving backward: new slide comes from left
+    items[currentSlide].style.transform = 'translateX(-100%)';
+    items[currentSlide].style.opacity = '0';
+  }
+
+  // Trigger reflow to ensure transition works
+  void items[currentSlide].offsetWidth;
+
+  // Activate new slide
+  items[currentSlide].classList.add('active');
+  items[currentSlide].style.transform = '';
+  items[currentSlide].style.opacity = '';
+
+  // Reset auto-rotation timer
+  resetCarouselAutoRotate();
+}
+
+// Auto-rotate carousel every 5 seconds
+function startCarouselAutoRotate() {
+  carouselInterval = setInterval(() => {
+    moveCarousel(1);
+  }, 5000);
+}
+
+function resetCarouselAutoRotate() {
+  if (carouselInterval) {
+    clearInterval(carouselInterval);
+  }
+  startCarouselAutoRotate();
+}
+
+function stopCarouselAutoRotate() {
+  if (carouselInterval) {
+    clearInterval(carouselInterval);
+    carouselInterval = null;
+  }
+}
+
+// Load trending movies
+async function loadTrending() {
+  const container = document.getElementById('trendingRow');
+  container.innerHTML = '<div class="loading">Loading...</div>';
+
+  try {
+    const response = await fetch('/api/movies/trending');
+    const data = await response.json();
+    displayMovieRow(container, data.results);
+  } catch (error) {
+    console.error('Trending error:', error);
+    container.innerHTML = '<div class="error">Failed to load</div>';
+  }
+}
+
+// Load "For You" movies (placeholder using popular until AI is implemented)
+async function loadForYou() {
+  const container = document.getElementById('forYouRow');
+  container.innerHTML = '<div class="loading">Loading...</div>';
+
+  try {
+    const response = await fetch('/api/movies/popular');
+    const data = await response.json();
+    displayMovieRow(container, data.results);
+  } catch (error) {
+    console.error('For You error:', error);
+    container.innerHTML = '<div class="error">Failed to load</div>';
+  }
+}
+
+// Load new releases
+async function loadNewReleases() {
+  const container = document.getElementById('newReleasesRow');
+  container.innerHTML = '<div class="loading">Loading...</div>';
+
+  try {
+    const response = await fetch('/api/movies/newreleases');
+    const data = await response.json();
+    displayMovieRow(container, data.results);
+  } catch (error) {
+    console.error('New releases error:', error);
+    container.innerHTML = '<div class="error">Failed to load</div>';
+  }
+}
+
+// Display movie row
+function displayMovieRow(container, movies) {
+  container.innerHTML = movies.map(movie => `
+    <div class="movie-poster" onclick="showMovieDetails(${movie.tmdbId})">
+      <img src="${movie.posterUrl || '/placeholder.jpg'}" alt="${movie.title}">
+      <div class="poster-overlay">
+        <span class="poster-title">${movie.title}</span>
+        <span class="poster-rating">⭐ ${(movie.rating || 0).toFixed(1)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Load my reviews
+async function loadMyReviews() {
+  const container = document.getElementById('reviewsList');
+  container.innerHTML = '<div class="loading">Loading your reviews...</div>';
+
+  try {
+    const response = await fetch('/api/reviews');
+    const data = await response.json();
+
+    if (data.reviews.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>No reviews yet. Start rating some movies!</p></div>';
+      return;
+    }
+
+    container.innerHTML = data.reviews.map(review => `
+      <div class="review-card" onclick="showMovieDetails(${review.tmdbId})">
+        <img src="${review.posterUrl || '/placeholder.jpg'}" alt="${review.title}">
+        <div class="review-card-content">
+          <h3>${review.title} (${review.year})</h3>
+          <div class="review-rating">Your Rating: ${review.rating}/10</div>
+          <p class="review-text">${review.review}</p>
+          <span class="review-date">${new Date(review.createdAt).toLocaleDateString()}</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Reviews error:', error);
+    container.innerHTML = '<div class="error">Failed to load reviews</div>';
+  }
+}
+
+// Load stats
+async function loadStats() {
+  const container = document.getElementById('statsContent');
+  container.innerHTML = '<div class="loading">Loading stats...</div>';
+
+  try {
+    const response = await fetch('/api/reviews');
+    const data = await response.json();
+    const reviews = data.reviews;
+
+    const totalReviews = reviews.length;
+    const avgRating = totalReviews > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
+      : 0;
+    const highestRated = reviews.sort((a, b) => b.rating - a.rating)[0];
+
+    // Calculate total hours watched
+    let totalMinutes = 0;
+    if (reviews.length > 0) {
+      // Fetch movie details for each review to get runtime
+      const movieDetailsPromises = reviews.map(review =>
+        fetch(`/api/movies/${review.tmdbId}`).then(res => res.json())
+      );
+      const movieDetails = await Promise.all(movieDetailsPromises);
+      totalMinutes = movieDetails.reduce((sum, movie) => sum + (movie.runtime || 0), 0);
+    }
+    const totalHours = (totalMinutes / 60).toFixed(1);
+
+    container.innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">${totalReviews}</div>
+          <div class="stat-label">Movies Reviewed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${avgRating}</div>
+          <div class="stat-label">Average Rating</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${totalHours}</div>
+          <div class="stat-label">Hours Watched</div>
+        </div>
+        ${highestRated ? `
+          <div class="stat-card">
+            <div class="stat-value">${highestRated.rating}/10</div>
+            <div class="stat-label">Highest Rated</div>
+            <div class="stat-detail">${highestRated.title}</div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  } catch (error) {
+    console.error('Stats error:', error);
+    container.innerHTML = '<div class="error">Failed to load stats</div>';
+  }
+}
+
+// Search from navbar
+async function handleNavSearch() {
+  const query = navSearchInput.value.trim();
+
+  if (!query) return;
+
+  // Switch to search view
+  switchView('search');
+
+  const searchTitle = document.getElementById('searchTitle');
+  const searchResults = document.getElementById('searchResults');
+
+  searchTitle.textContent = `Search Results for "${query}"`;
+  searchResults.innerHTML = '<div class="loading">🔍 Searching...</div>';
+
+  try {
+    const response = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+
+    if (data.results && data.results.length > 0) {
+      // Sort by relevance: popularity (vote_count) and rating
+      const sortedResults = data.results.sort((a, b) => {
+        // Calculate relevance score: rating * log(vote_count + 1)
+        const scoreA = (a.rating || 0) * Math.log10((a.vote_count || 0) + 1);
+        const scoreB = (b.rating || 0) * Math.log10((b.vote_count || 0) + 1);
+        return scoreB - scoreA;
+      });
+
+      searchResults.innerHTML = sortedResults.map(movie => `
+        <div class="movie-card" onclick="showMovieDetails(${movie.tmdbId})">
+          <img src="${movie.posterUrl || '/placeholder.jpg'}" alt="${movie.title}">
+          <div class="movie-card-info">
+            <h3>${movie.title}</h3>
+            <span class="year">${movie.year}</span>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      searchResults.innerHTML = `<div class="empty-state"><p>No movies found for "${query}"</p></div>`;
+    }
+    navSearchInput.value = '';
+  } catch (error) {
+    console.error('Search error:', error);
+    searchResults.innerHTML = `<div class="error">Search failed. Please try again.</div>`;
+  }
+}
+
+// Show movie details in modal
+async function showMovieDetails(tmdbId) {
+  modal.classList.remove('hidden');
+  modalBody.innerHTML = '<div class="loading">Loading movie details...</div>';
+
+  try {
+    // Fetch movie details and user's review in parallel
+    const [movieRes, reviewRes] = await Promise.all([
+      fetch(`/api/movies/${tmdbId}`),
+      fetch(`/api/reviews/movie/${tmdbId}`)
+    ]);
+
+    const movie = await movieRes.json();
+    const { review: existingReview } = await reviewRes.json();
+
+    modalBody.innerHTML = `
+      <div class="movie-detail">
+        <div class="movie-detail-poster">
+          ${movie.posterUrl
+            ? `<img src="${movie.posterUrl}" alt="${movie.title}">`
+            : `<div class="no-poster" style="aspect-ratio: 2/3; border-radius: 12px;">🎬</div>`
+          }
+        </div>
+        <div class="movie-detail-info">
+          <h2>${movie.title}</h2>
+          <p class="meta">
+            ${movie.year} • ${movie.runtime ? movie.runtime + ' min' : 'Runtime N/A'}
+            ${movie.genres ? ' • ' + movie.genres.join(', ') : ''}
+          </p>
+          <p class="overview">${movie.overview || 'No overview available.'}</p>
+
+          <div class="ratings">
+            <div class="rating-badge imdb">
+              <div class="label">IMDb</div>
+              <div class="value">${movie.imdbRating || 'N/A'}</div>
+            </div>
+            <div class="rating-badge rt">
+              <div class="label">Rotten Tomatoes</div>
+              <div class="value">${movie.rottenTomatoes || 'N/A'}</div>
+            </div>
+            ${movie.metascore ? `
+              <div class="rating-badge">
+                <div class="label">Metascore</div>
+                <div class="value">${movie.metascore}</div>
+              </div>
+            ` : ''}
+            ${existingReview ? `
+              <div class="rating-badge your-rating">
+                <div class="label">Your Rating</div>
+                <div class="value">${existingReview.rating}/10</div>
+              </div>
+            ` : ''}
+          </div>
+
+          ${existingReview ? `
+            <div class="user-review">
+              <h3>Your Review</h3>
+              <p>${existingReview.review}</p>
+              <div class="review-actions">
+                <button onclick="editReview('${existingReview._id}', ${tmdbId})" class="btn-secondary">Edit Review</button>
+                <button onclick="deleteReview('${existingReview._id}', ${tmdbId})" class="btn-danger">Delete Review</button>
+              </div>
+            </div>
+          ` : `
+            <div class="review-form">
+              <h3>Add Your Review</h3>
+              <form onsubmit="submitReview(event, ${tmdbId}, '${movie.title}', '${movie.year}', '${movie.posterUrl || ''}')">
+                <div class="form-group">
+                  <label>Rating (0-10)</label>
+                  <input type="number" id="rating" min="0" max="10" step="0.5" required>
+                </div>
+                <div class="form-group">
+                  <label>Your Review</label>
+                  <textarea id="review" rows="4" required placeholder="What did you think?"></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Submit Review</button>
+              </form>
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Details error:', error);
+    modalBody.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <p>Failed to load movie details.</p>
+      </div>
+    `;
+  }
+}
+
+// Submit a new review
+async function submitReview(event, tmdbId, title, year, posterUrl) {
+  event.preventDefault();
+
+  const rating = parseFloat(document.getElementById('rating').value);
+  const review = document.getElementById('review').value;
+
+  try {
+    const response = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdbId, title, year, posterUrl, rating, review })
+    });
+
+    if (response.ok) {
+      showMovieDetails(tmdbId); // Reload to show the review
+    } else {
+      const data = await response.json();
+      alert('Error: ' + data.error);
+    }
+  } catch (error) {
+    console.error('Submit error:', error);
+    alert('Failed to submit review');
+  }
+}
+
+// Delete a review
+async function deleteReview(reviewId, tmdbId) {
+  if (!confirm('Are you sure you want to delete this review?')) return;
+
+  try {
+    const response = await fetch(`/api/reviews/${reviewId}`, {
+      method: 'DELETE'
+    });
+
+    if (response.ok) {
+      showMovieDetails(tmdbId); // Reload to show the form again
+    } else {
+      alert('Failed to delete review');
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    alert('Failed to delete review');
+  }
+}
+
+// Edit a review (shows the form with existing data)
+async function editReview(reviewId, tmdbId) {
+  // For now, we'll just show a prompt - you can make this fancier later
+  const newRating = prompt('Enter new rating (0-10):');
+  const newReview = prompt('Enter new review:');
+
+  if (!newRating || !newReview) return;
+
+  try {
+    const response = await fetch(`/api/reviews/${reviewId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rating: parseFloat(newRating),
+        review: newReview
+      })
+    });
+
+    if (response.ok) {
+      showMovieDetails(tmdbId);
+    } else {
+      alert('Failed to update review');
+    }
+  } catch (error) {
+    console.error('Update error:', error);
+    alert('Failed to update review');
+  }
+}
+
+// Initialize app - load home page
+loadHomePage();
