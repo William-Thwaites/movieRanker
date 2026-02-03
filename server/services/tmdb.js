@@ -117,6 +117,66 @@ async function getMovieDetails(tmdbId) {
 }
 
 /**
+ * Get age rating/certification for a movie
+ */
+async function getMovieCertification(tmdbId) {
+  try {
+    const response = await tmdbApi.get(`/movie/${tmdbId}/release_dates`);
+    const releaseDates = response.data.results;
+
+    // Try to find UK certification first (GB = Great Britain)
+    const ukRelease = releaseDates.find(r => r.iso_3166_1 === 'GB');
+    if (ukRelease && ukRelease.release_dates.length > 0) {
+      const cert = ukRelease.release_dates.find(rd => rd.certification);
+      if (cert && cert.certification) {
+        return cert.certification;
+      }
+    }
+
+    // Fallback to any certification available
+    for (const release of releaseDates) {
+      if (release.release_dates.length > 0) {
+        const cert = release.release_dates.find(rd => rd.certification);
+        if (cert && cert.certification) {
+          return cert.certification;
+        }
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('TMDB certification error:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Get streaming availability for a movie
+ */
+async function getWatchProviders(tmdbId) {
+  try {
+    const response = await tmdbApi.get(`/movie/${tmdbId}/watch/providers`);
+    const providers = response.data.results;
+
+    // Try to get US providers first
+    const usProviders = providers['US'];
+    if (usProviders) {
+      return {
+        link: usProviders.link,
+        flatrate: usProviders.flatrate || [], // Subscription services
+        buy: usProviders.buy || [], // Purchase options
+        rent: usProviders.rent || [], // Rental options
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('TMDB watch providers error:', error.message);
+    return null;
+  }
+}
+
+/**
  * Get collection details including all movies in the franchise
  */
 async function getCollection(collectionId) {
@@ -229,6 +289,56 @@ async function getNewReleases() {
   }
 }
 
+/**
+ * Get movie recommendations based on a specific movie
+ */
+async function getRecommendationsForMovie(tmdbId) {
+  try {
+    const response = await tmdbApi.get(`/movie/${tmdbId}/recommendations`);
+    return response.data.results.map(movie => ({
+      tmdbId: movie.id,
+      title: movie.title,
+      year: movie.release_date ? movie.release_date.split('-')[0] : 'N/A',
+      overview: movie.overview,
+      posterUrl: movie.poster_path
+        ? `${TMDB_IMAGE_BASE}${movie.poster_path}`
+        : null,
+      rating: movie.vote_average || 0,
+    }));
+  } catch (error) {
+    console.error('TMDB recommendations error:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Discover movies based on criteria (genres, year, etc.)
+ */
+async function discoverMovies(options = {}) {
+  try {
+    const params = {
+      sort_by: options.sortBy || 'popularity.desc',
+      'vote_count.gte': 100, // Only movies with decent number of votes
+      ...options,
+    };
+
+    const response = await tmdbApi.get('/discover/movie', { params });
+    return response.data.results.map(movie => ({
+      tmdbId: movie.id,
+      title: movie.title,
+      year: movie.release_date ? movie.release_date.split('-')[0] : 'N/A',
+      overview: movie.overview,
+      posterUrl: movie.poster_path
+        ? `${TMDB_IMAGE_BASE}${movie.poster_path}`
+        : null,
+      rating: movie.vote_average || 0,
+    }));
+  } catch (error) {
+    console.error('TMDB discover error:', error.message);
+    throw new Error('Failed to discover movies');
+  }
+}
+
 module.exports = {
   searchMovies,
   searchMoviesWithFranchise,
@@ -238,4 +348,8 @@ module.exports = {
   getTopRated,
   getNewReleases,
   getCollection,
+  getRecommendationsForMovie,
+  discoverMovies,
+  getMovieCertification,
+  getWatchProviders,
 };

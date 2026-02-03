@@ -12,6 +12,7 @@ const reviewSchema = new mongoose.Schema({
   },
   year: String,
   posterUrl: String,
+  genres: [String], // Array of genre names
 
   // Review content
   rating: {

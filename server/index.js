@@ -6,6 +6,7 @@ require('dotenv').config();
 const connectDB = require('./config/database');
 const movieRoutes = require('./routes/movies');
 const reviewRoutes = require('./routes/reviews');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/reviews', reviewRoutes);
 

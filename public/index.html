@@ -7,8 +7,42 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Navigation Bar -->
-  <nav class="navbar">
+  <!-- Login Page (shown before authentication) -->
+  <div id="loginPage" class="login-page">
+    <div class="login-container">
+      <div class="login-header">
+        <h1>🎬 Movie Ranker</h1>
+        <p>Track, rate, and discover your favorite movies</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="loginTab" onclick="switchAuthTab('login')">Login</button>
+        <button class="auth-tab" id="signupTab" onclick="switchAuthTab('signup')">Sign Up</button>
+      </div>
+
+      <form id="loginForm" class="auth-form">
+        <div class="form-group" id="loginUsernameGroup" style="display: none;">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" placeholder="Enter username" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="Enter email" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
+        </div>
+        <div class="auth-error" id="loginError"></div>
+        <button type="submit" class="btn-primary btn-auth-submit" id="loginSubmitBtn">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App (shown after authentication) -->
+  <div id="appContainer" class="app-container hidden">
+    <!-- Navigation Bar -->
+    <nav class="navbar">
     <div class="nav-brand">
       <h1>🎬 Movie Ranker</h1>
     </div>
@@ -24,6 +58,12 @@
         placeholder="Search movies..."
         autocomplete="off"
       >
+    </div>
+    <div class="nav-user" id="navUser">
+      <div class="user-menu" id="userMenu">
+        <span class="username" id="usernameDisplay"></span>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+      </div>
     </div>
   </nav>
 
@@ -55,6 +95,43 @@
     <!-- My Reviews View -->
     <div id="reviewsView" class="view">
       <h2>My Reviews</h2>
+      <div class="reviews-filters">
+        <div class="filter-group">
+          <label for="sortFilter">Sort by:</label>
+          <select id="sortFilter" onchange="applyReviewFilters()">
+            <option value="newest">Newest First</option>
+            <option value="highest">Highest Rated</option>
+            <option value="lowest">Lowest Rated</option>
+          </select>
+        </div>
+        <div class="filter-group genre-filter-group">
+          <div class="genre-header" onclick="toggleGenreFilter()">
+            <label>Genres:</label>
+            <span class="toggle-icon" id="genreToggle">▼</span>
+          </div>
+          <div class="genre-checkboxes collapsed" id="genreCheckboxes">
+            <label class="genre-checkbox"><input type="checkbox" value="Action" onchange="applyReviewFilters()"><span>Action</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Adventure" onchange="applyReviewFilters()"><span>Adventure</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Animation" onchange="applyReviewFilters()"><span>Animation</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Comedy" onchange="applyReviewFilters()"><span>Comedy</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Crime" onchange="applyReviewFilters()"><span>Crime</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Documentary" onchange="applyReviewFilters()"><span>Documentary</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Drama" onchange="applyReviewFilters()"><span>Drama</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Family" onchange="applyReviewFilters()"><span>Family</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Fantasy" onchange="applyReviewFilters()"><span>Fantasy</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="History" onchange="applyReviewFilters()"><span>History</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Horror" onchange="applyReviewFilters()"><span>Horror</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Music" onchange="applyReviewFilters()"><span>Music</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Mystery" onchange="applyReviewFilters()"><span>Mystery</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Romance" onchange="applyReviewFilters()"><span>Romance</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Science Fiction" onchange="applyReviewFilters()"><span>Sci-Fi</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Thriller" onchange="applyReviewFilters()"><span>Thriller</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="War" onchange="applyReviewFilters()"><span>War</span></label>
+            <label class="genre-checkbox"><input type="checkbox" value="Western" onchange="applyReviewFilters()"><span>Western</span></label>
+          </div>
+          <button class="clear-filter-btn" onclick="clearGenreFilter()">Clear All</button>
+        </div>
+      </div>
       <div id="reviewsList" class="reviews-list">
         <!-- User's reviews will be inserted here -->
       </div>
@@ -88,6 +165,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 
   <script src="app.js"></script>
