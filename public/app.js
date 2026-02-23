@@ -45,6 +45,7 @@ async function checkAuth() {
       const data = await response.json();
       currentUser = data.user;
       showApp();
+      switchView('home');
       loadHomePage();
     } else {
       // Token invalid, clear it
@@ -135,8 +136,9 @@ loginForm.addEventListener('submit', async (e) => {
       localStorage.setItem('authToken', authToken);
       currentUser = data.user;
 
-      // Show app and load home page
+      // Show app and switch to home view
       showApp();
+      switchView('home');
       loadHomePage();
     } else {
       loginError.textContent = data.error || 'Authentication failed';
@@ -171,9 +173,87 @@ async function logout() {
   showLoginPage();
 }
 
+// Autocomplete
+const searchAutocomplete = document.getElementById('searchAutocomplete');
+let autocompleteTimeout = null;
+
+navSearchInput.addEventListener('input', () => {
+  const query = navSearchInput.value.trim();
+  clearTimeout(autocompleteTimeout);
+
+  if (query.length < 2) {
+    searchAutocomplete.classList.add('hidden');
+    return;
+  }
+
+  searchAutocomplete.innerHTML = '<div class="autocomplete-loading">Searching...</div>';
+  searchAutocomplete.classList.remove('hidden');
+
+  autocompleteTimeout = setTimeout(async () => {
+    try {
+      const response = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      if (!data.results || data.results.length === 0) {
+        searchAutocomplete.innerHTML = '<div class="autocomplete-empty">No movies found</div>';
+        return;
+      }
+
+      const sorted = data.results.sort((a, b) => {
+        const scoreA = (a.rating || 0) * Math.log10((a.vote_count || 0) + 1);
+        const scoreB = (b.rating || 0) * Math.log10((b.vote_count || 0) + 1);
+        return scoreB - scoreA;
+      });
+
+      const top = sorted.slice(0, 6);
+      searchAutocomplete.innerHTML = top.map(movie => `
+        <div class="autocomplete-item" data-tmdb-id="${movie.tmdbId}">
+          <img class="autocomplete-poster" src="${movie.posterUrl || '/placeholder.jpg'}" alt="${movie.title}">
+          <div class="autocomplete-info">
+            <div class="autocomplete-title">${movie.title}</div>
+            <div class="autocomplete-meta">${movie.year || ''}</div>
+          </div>
+          ${movie.rating ? `<span class="autocomplete-rating">⭐ ${movie.rating.toFixed(1)}</span>` : ''}
+        </div>
+      `).join('') + (data.results.length > 6
+        ? `<div class="autocomplete-view-all" id="autocompleteViewAll">View all ${data.results.length} results</div>`
+        : '');
+
+      searchAutocomplete.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('click', () => {
+          searchAutocomplete.classList.add('hidden');
+          navSearchInput.value = '';
+          showMovieDetails(parseInt(item.dataset.tmdbId));
+        });
+      });
+
+      const viewAllBtn = document.getElementById('autocompleteViewAll');
+      if (viewAllBtn) {
+        viewAllBtn.addEventListener('click', () => {
+          searchAutocomplete.classList.add('hidden');
+          handleNavSearch();
+        });
+      }
+    } catch (error) {
+      console.error('Autocomplete error:', error);
+      searchAutocomplete.innerHTML = '<div class="autocomplete-empty">Search failed</div>';
+    }
+  }, 300);
+});
+
+// Close autocomplete when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.nav-search')) {
+    searchAutocomplete.classList.add('hidden');
+  }
+});
+
 // Event Listeners
 navSearchInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') handleNavSearch();
+  if (e.key === 'Enter') {
+    searchAutocomplete.classList.add('hidden');
+    handleNavSearch();
+  }
 });
 closeModal.addEventListener('click', () => modal.classList.add('hidden'));
 modal.addEventListener('click', (e) => {
@@ -874,6 +954,62 @@ async function editReview(reviewId, tmdbId) {
     alert('Failed to update review');
   }
 }
+
+// Forgot Password Modal Functions
+function showForgotPasswordModal() {
+  document.getElementById('forgotPasswordModal').classList.remove('hidden');
+  document.getElementById('forgotEmail').value = '';
+  document.getElementById('forgotPasswordError').textContent = '';
+  document.getElementById('forgotPasswordSuccess').textContent = '';
+}
+
+function closeForgotPasswordModal() {
+  document.getElementById('forgotPasswordModal').classList.add('hidden');
+}
+
+async function handleForgotPassword(event) {
+  event.preventDefault();
+
+  const email = document.getElementById('forgotEmail').value;
+  const errorDiv = document.getElementById('forgotPasswordError');
+  const successDiv = document.getElementById('forgotPasswordSuccess');
+  const submitBtn = document.getElementById('forgotPasswordBtn');
+
+  errorDiv.textContent = '';
+  successDiv.textContent = '';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending...';
+
+  try {
+    const response = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      successDiv.textContent = data.message;
+      document.getElementById('forgotPasswordForm').reset();
+    } else {
+      errorDiv.textContent = data.error || 'Failed to process request';
+    }
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    errorDiv.textContent = 'Network error. Please try again.';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send Reset Link';
+  }
+}
+
+// Close forgot password modal when clicking outside
+document.getElementById('forgotPasswordModal').addEventListener('click', (e) => {
+  if (e.target.id === 'forgotPasswordModal') {
+    closeForgotPasswordModal();
+  }
+});
 
 // Initialize app - check authentication
 checkAuth();

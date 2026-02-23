@@ -15,7 +15,10 @@ const PORT = process.env.PORT || 3000;
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'https://movieranker.co.uk',
+  credentials: true
+}));
 app.use(express.json());
 
 // Serve static files from public folder
