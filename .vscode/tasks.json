@@ -1,0 +1,49 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Jest All Tests",
+      "type": "shell",
+      "command": "npx jest --verbose",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Jest Unit Tests",
+      "type": "shell",
+      "command": "npx jest --testPathPatterns=tests/unit --verbose",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Jest Integration Tests",
+      "type": "shell",
+      "command": "npx jest --testPathPatterns=tests/integration --verbose",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Jest Current File",
+      "type": "shell",
+      "command": "npx jest ${relativeFile} --verbose",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    }
+  ]
+}

@@ -2,12 +2,21 @@
     "name": "movie-ranker",
     "version": "1.0.0",
     "description": "Personal movie ranking and review site",
-    "main": "server/index.js",
+    "main": "server/start.js",
     "scripts": {
-        "start": "node server/index.js",
-        "dev": "nodemon server/index.js",
+        "start": "node server/start.js",
+        "dev": "nodemon server/start.js",
         "test": "npx playwright test",
-        "test:ui": "npx playwright test --ui"
+        "test:ui": "npx playwright test --ui",
+        "test:unit": "jest --testPathPatterns=tests/unit",
+        "test:integration": "jest --testPathPatterns=tests/integration",
+        "test:all": "jest && npx playwright test"
+    },
+    "jest": {
+        "testEnvironment": "node",
+        "testTimeout": 10000,
+        "verbose": true,
+        "testPathIgnorePatterns": ["/node_modules/", "tests/e2e"]
     },
     "keywords": [
         "movies",
@@ -22,12 +31,16 @@
         "cors": "^2.8.5",
         "dotenv": "^16.3.1",
         "express": "^4.18.2",
+        "joi": "^18.0.2",
         "jsonwebtoken": "^9.0.3",
         "mongoose": "^9.1.5",
         "resend": "^2.1.0"
     },
     "devDependencies": {
         "@playwright/test": "^1.58.2",
-        "nodemon": "^3.0.1"
+        "jest": "^30.2.0",
+        "mongodb-memory-server": "^11.0.1",
+        "nodemon": "^3.0.1",
+        "supertest": "^7.2.2"
     }
 }

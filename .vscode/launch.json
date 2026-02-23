@@ -6,7 +6,7 @@
       "request": "launch",
       "name": "Launch Movie Ranker Server",
       "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/server/index.js",
+      "program": "${workspaceFolder}/server/start.js",
       "restart": true,
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
@@ -17,7 +17,7 @@
       "request": "launch",
       "name": "Launch with Nodemon",
       "runtimeExecutable": "nodemon",
-      "program": "${workspaceFolder}/server/index.js",
+      "program": "${workspaceFolder}/server/start.js",
       "restart": true,
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
@@ -58,6 +58,15 @@
       "runtimeArgs": ["playwright", "test", "${relativeFile}", "--headed", "--debug"],
       "console": "integratedTerminal",
       "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Jest Current File",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["jest", "${relativeFile}", "--verbose"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
     }
   ]
 }

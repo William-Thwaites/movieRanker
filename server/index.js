@@ -3,16 +3,12 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-const connectDB = require('./config/database');
 const movieRoutes = require('./routes/movies');
 const reviewRoutes = require('./routes/reviews');
 const authRoutes = require('./routes/auth');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Connect to MongoDB
-connectDB();
 
 // Middleware
 app.use(cors({
@@ -34,7 +30,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Movie Ranker API is running!' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🎬 Movie Ranker server running at http://localhost:${PORT}`);
-});
+// Centralized error handling (must be after all routes)
+app.use(errorHandler);
+
+module.exports = app;
