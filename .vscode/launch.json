@@ -67,6 +67,42 @@
       "runtimeArgs": ["jest", "${relativeFile}", "--verbose"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest Unit Tests",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["jest", "--testPathPatterns=tests/unit", "--verbose"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest Integration Tests",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["jest", "--testPathPatterns=tests/integration", "--verbose"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest All Tests",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["jest", "--verbose"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Playwright Current File",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["playwright", "test", "${relativeFile}"],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
     }
   ]
 }
