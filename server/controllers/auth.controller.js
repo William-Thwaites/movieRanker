@@ -22,8 +22,12 @@ const logout = (req, res) => {
 };
 
 const forgotPassword = asyncHandler(async (req, res) => {
-  await authService.forgotPassword(req.body.email);
-  res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+  const didSend = await authService.forgotPassword(req.body.email);
+  if (didSend) {
+    res.json({ message: 'A password reset link has been sent.' });
+    return;
+  } 
+  res.json({ message: 'There is no account associated with that email address.' });
 });
 
 const resetPassword = asyncHandler(async (req, res) => {

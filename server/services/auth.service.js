@@ -40,9 +40,9 @@ async function login({ email, password }) {
 
 async function forgotPassword(email) {
   const user = await User.findOne({ email: email.toLowerCase() });
-  if (!user) return; // Silent return to prevent email enumeration
+  if (!user) return false; // Silent return to prevent email enumeration
 
-  const resetToken = crypto.randomBytes(32).toString('hex');
+  const resetToken = crypto.randomBytes(32).toString('hex');  
   const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
   user.resetPasswordToken = hashedToken;
@@ -50,6 +50,7 @@ async function forgotPassword(email) {
   await user.save({ validateBeforeSave: false });
 
   await sendPasswordResetEmail(user.email, resetToken);
+  return true
 }
 
 async function resetPassword({ token, password }) {
