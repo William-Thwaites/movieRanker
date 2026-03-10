@@ -151,6 +151,37 @@ async function getMovieCertification(tmdbId) {
 }
 
 /**
+ * Get cast and director for a movie
+ */
+async function getMovieCredits(tmdbId) {
+  try {
+    const response = await tmdbApi.get(`/movie/${tmdbId}/credits`);
+    const { cast, crew } = response.data;
+
+    const director = crew.find(person => person.job === 'Director');
+
+    return {
+      director: director ? {
+        name: director.name,
+        profileUrl: director.profile_path
+          ? `${TMDB_IMAGE_BASE}${director.profile_path}`
+          : null,
+      } : null,
+      cast: cast.slice(0, 6).map(person => ({
+        name: person.name,
+        character: person.character,
+        profileUrl: person.profile_path
+          ? `${TMDB_IMAGE_BASE}${person.profile_path}`
+          : null,
+      })),
+    };
+  } catch (error) {
+    console.error('TMDB credits error:', error.message);
+    return { director: null, cast: [] };
+  }
+}
+
+/**
  * Get streaming availability for a movie
  */
 async function getWatchProviders(tmdbId) {
@@ -352,4 +383,5 @@ module.exports = {
   discoverMovies,
   getMovieCertification,
   getWatchProviders,
+  getMovieCredits,
 };

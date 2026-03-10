@@ -10,6 +10,7 @@ const loginForm = document.getElementById('loginForm');
 // Views
 const homeView = document.getElementById('homeView');
 const reviewsView = document.getElementById('reviewsView');
+const watchlistView = document.getElementById('watchlistView');
 const statsView = document.getElementById('statsView');
 const searchView = document.getElementById('searchView');
 
@@ -255,9 +256,15 @@ navSearchInput.addEventListener('keypress', (e) => {
     handleNavSearch();
   }
 });
-closeModal.addEventListener('click', () => modal.classList.add('hidden'));
+closeModal.addEventListener('click', () => {
+  modal.classList.add('hidden');
+  document.body.style.overflow = '';
+});
 modal.addEventListener('click', (e) => {
-  if (e.target === modal) modal.classList.add('hidden');
+  if (e.target === modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
 });
 
 // Navigation
@@ -277,6 +284,7 @@ function switchView(viewName) {
   const viewMap = {
     home: homeView,
     reviews: reviewsView,
+    watchlist: watchlistView,
     stats: statsView,
     search: searchView
   };
@@ -285,6 +293,7 @@ function switchView(viewName) {
   document.querySelector(`[data-view="${viewName}"]`)?.classList.add('active');
 
   if (viewName === 'reviews') loadMyReviews();
+  if (viewName === 'watchlist') loadWatchlist();
   if (viewName === 'stats') loadStats();
 }
 
@@ -678,6 +687,91 @@ async function loadStats() {
   }
 }
 
+// Load watchlist
+async function loadWatchlist() {
+  const container = document.getElementById('watchlistList');
+  container.innerHTML = '<div class="loading">Loading your watchlist...</div>';
+
+  try {
+    const response = await fetch('/api/watchlist', {
+      headers: getAuthHeaders()
+    });
+    const data = await response.json();
+
+    if (data.watchlist.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Your watchlist is empty. Find a movie and click "Add to Watchlist"!</p></div>';
+      return;
+    }
+
+    container.innerHTML = data.watchlist.map(entry => `
+      <div class="review-card" onclick="showMovieDetails(${entry.tmdbId})">
+        <img src="${entry.posterUrl || '/placeholder.jpg'}" alt="${entry.title}">
+        <div class="review-card-content">
+          <h3>${entry.title}${entry.year ? ' (' + entry.year + ')' : ''}</h3>
+          ${entry.genres && entry.genres.length > 0
+            ? `<div class="review-genres">${entry.genres.join(', ')}</div>`
+            : ''}
+          <span class="review-date">Added ${new Date(entry.createdAt).toLocaleDateString()}</span>
+          <div class="watchlist-action">
+            <button
+              onclick="event.stopPropagation(); removeFromWatchlist(${entry.tmdbId})"
+              class="btn-danger">
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Watchlist error:', error);
+    container.innerHTML = '<div class="error">Failed to load watchlist</div>';
+  }
+}
+
+// Add a movie to the watchlist
+async function addToWatchlist(tmdbId, title, year, posterUrl) {
+  try {
+    const response = await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ tmdbId, title, year, posterUrl })
+    });
+
+    if (response.ok) {
+      showMovieDetails(tmdbId);
+    } else {
+      const data = await response.json();
+      alert(data.error || 'Failed to add to watchlist');
+    }
+  } catch (error) {
+    console.error('Add to watchlist error:', error);
+    alert('Failed to add to watchlist');
+  }
+}
+
+// Remove a movie from the watchlist
+async function removeFromWatchlist(tmdbId, reloadModal = false) {
+  try {
+    const response = await fetch(`/api/watchlist/${tmdbId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      if (reloadModal) {
+        showMovieDetails(tmdbId);
+      } else {
+        loadWatchlist();
+      }
+    } else {
+      alert('Failed to remove from watchlist');
+    }
+  } catch (error) {
+    console.error('Remove from watchlist error:', error);
+    alert('Failed to remove from watchlist');
+  }
+}
+
 // Search from navbar
 async function handleNavSearch() {
   const query = navSearchInput.value.trim();
@@ -731,19 +825,20 @@ async function showMovieDetails(tmdbId) {
   stopCarouselAutoRotate();
 
   modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
   modalBody.innerHTML = '<div class="loading">Loading movie details...</div>';
 
   try {
-    // Fetch movie details and user's review in parallel
-    const [movieRes, reviewRes] = await Promise.all([
+    // Fetch movie details, user's review, and watchlist status in parallel
+    const [movieRes, reviewRes, watchlistRes] = await Promise.all([
       fetch(`/api/movies/${tmdbId}`),
-      fetch(`/api/reviews/movie/${tmdbId}`, {
-        headers: getAuthHeaders()
-      })
+      fetch(`/api/reviews/movie/${tmdbId}`, { headers: getAuthHeaders() }),
+      fetch(`/api/watchlist/${tmdbId}`, { headers: getAuthHeaders() })
     ]);
 
     const movie = await movieRes.json();
     const { review: existingReview } = await reviewRes.json();
+    const { inWatchlist } = await watchlistRes.json();
 
     modalBody.innerHTML = `
       <div class="movie-detail">
@@ -817,6 +912,19 @@ async function showMovieDetails(tmdbId) {
           </p>
           <p class="overview">${movie.overview || 'No overview available.'}</p>
 
+          ${movie.director || (movie.cast && movie.cast.length > 0) ? `
+            <div class="movie-credits">
+              ${movie.director ? `
+                <p class="director">Directed by <strong>${movie.director.name}</strong></p>
+              ` : ''}
+              ${movie.cast && movie.cast.length > 0 ? `
+                <p class="cast-names"><span class="cast-label">Starring:</span> ${movie.cast.map(person =>
+                  `<span class="cast-entry">${person.name}</span>`
+                ).join('')}</p>
+              ` : ''}
+            </div>
+          ` : ''}
+
           <div class="ratings">
             <div class="rating-badge imdb">
               <div class="label">IMDb</div>
@@ -838,6 +946,13 @@ async function showMovieDetails(tmdbId) {
                 <div class="value">${existingReview.rating}/10</div>
               </div>
             ` : ''}
+          </div>
+
+          <div class="watchlist-action">
+            ${inWatchlist
+              ? `<button onclick="removeFromWatchlist(${tmdbId}, true)" class="btn-secondary watchlist-btn">- Remove from Watchlist</button>`
+              : `<button onclick="addToWatchlist(${tmdbId}, '${movie.title.replace(/'/g, "\\'")}', '${movie.year || ''}', '${movie.posterUrl || ''}')" class="btn-primary watchlist-btn">+ Add to Watchlist</button>`
+            }
           </div>
 
           ${existingReview ? `

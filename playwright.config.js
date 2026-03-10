@@ -1,6 +1,9 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
 
+require('dotenv').config();
+const PORT = process.env.PORT || 3000;
+
 module.exports = defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -10,7 +13,7 @@ module.exports = defineConfig({
   reporter: 'html',
 
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
   },
 
@@ -23,7 +26,7 @@ module.exports = defineConfig({
 
   webServer: {
     command: 'npm start',
-    url: 'http://localhost:3000/api/health',
+    url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 15000,
   },

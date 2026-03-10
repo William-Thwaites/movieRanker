@@ -6,6 +6,7 @@ require('dotenv').config();
 const movieRoutes = require('./routes/movies');
 const reviewRoutes = require('./routes/reviews');
 const authRoutes = require('./routes/auth');
+const watchlistRoutes = require('./routes/watchlist');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -24,6 +25,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/watchlist', watchlistRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

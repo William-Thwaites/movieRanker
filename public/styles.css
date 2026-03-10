@@ -188,6 +188,7 @@ body {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+  width: 100%;
 }
 
 /* Views */
@@ -264,8 +265,8 @@ header h1 {
 /* Results Grid */
 .results-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1.5rem;
 }
 
 /* Movie Card */
@@ -395,8 +396,41 @@ header h1 {
 
 .movie-detail-info .overview {
   line-height: 1.6;
-  color: #ccc;
+  color: #fff;
   margin-bottom: 1.5rem;
+}
+
+/* Credits */
+.movie-credits {
+  margin-bottom: 1.5rem;
+}
+
+.movie-credits .director {
+  color: #888;
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+}
+
+.movie-credits .director strong {
+  color: #fff;
+}
+
+.cast-names {
+  color: #ccc;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.cast-label {
+  color: #888;
+}
+
+.cast-entry:not(:last-child)::after {
+  content: ', ';
+}
+
+.cast-entry {
+  color: #fff;
 }
 
 /* Ratings */
@@ -894,15 +928,22 @@ header h1 {
   color: #ffd700;
 }
 
-/* Reviews Filters */
-.reviews-filters {
+/* Section Header (matches home page movie-row style) */
+.section-header {
   display: flex;
-  gap: 2rem;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+/* Genre filter row (below section header) */
+.genre-filter-row {
+  margin-bottom: 1.5rem;
 }
 
 .filter-group {
@@ -918,42 +959,45 @@ header h1 {
 }
 
 .filter-group select {
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  padding: 0.6rem 2.2rem 0.6rem 1rem;
+  background: rgba(233, 69, 96, 0.15);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  border-radius: 20px;
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
   outline: none;
   transition: all 0.3s;
   min-width: 180px;
-}
-
-.filter-group select[multiple] {
-  min-height: 120px;
-  min-width: 220px;
-  padding: 0.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23e94560' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
 }
 
 .filter-group select:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.filter-group select:focus {
-  background: rgba(255, 255, 255, 0.2);
+  background-color: rgba(233, 69, 96, 0.25);
   border-color: rgba(233, 69, 96, 0.5);
 }
 
+.filter-group select:focus {
+  background-color: rgba(233, 69, 96, 0.25);
+  border-color: #e94560;
+  box-shadow: 0 0 12px rgba(233, 69, 96, 0.2);
+}
+
 .filter-group select option {
-  background: #1a1a2e;
+  background: #16213e;
   color: #fff;
-  padding: 0.3rem 0.5rem;
+  padding: 0.5rem;
 }
 
 .filter-group select option:checked {
-  background: linear-gradient(rgba(233, 69, 96, 0.8), rgba(233, 69, 96, 0.8));
+  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  color: #fff;
 }
 
 .clear-filter-btn {
@@ -1065,8 +1109,8 @@ header h1 {
 /* Reviews List */
 .reviews-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1.5rem;
 }
 
 .review-card {
@@ -1075,8 +1119,6 @@ header h1 {
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s;
-  display: flex;
-  gap: 1rem;
 }
 
 .review-card:hover {
@@ -1085,14 +1127,14 @@ header h1 {
 }
 
 .review-card img {
-  width: 120px;
-  height: 180px;
+  width: 100%;
+  aspect-ratio: 2/3;
   object-fit: cover;
+  display: block;
 }
 
 .review-card-content {
   padding: 1rem;
-  flex: 1;
 }
 
 .review-card h3 {
@@ -1143,8 +1185,18 @@ header h1 {
 
 .search-results {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Watchlist */
+.watchlist-action {
+  margin-top: 0.75rem;
+}
+
+.watchlist-btn {
+  font-size: 0.9rem;
+  padding: 0.4rem 1rem;
 }
 
 /* Stats */

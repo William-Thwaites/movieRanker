@@ -94,10 +94,11 @@ async function getRecommendations(userId) {
  * Get full movie details with external ratings.
  */
 async function getMovieDetails(tmdbId) {
-  const [movie, certification, watchProviders, ratings] = await Promise.all([
+  const [movie, certification, watchProviders, credits, ratings] = await Promise.all([
     tmdb.getMovieDetails(tmdbId),
     tmdb.getMovieCertification(tmdbId),
     tmdb.getWatchProviders(tmdbId),
+    tmdb.getMovieCredits(tmdbId),
     (async () => {
       const movieData = await tmdb.getMovieDetails(tmdbId);
       if (movieData.imdbId) {
@@ -113,6 +114,7 @@ async function getMovieDetails(tmdbId) {
     ...movie,
     certification,
     watchProviders,
+    ...credits,
     ...ratings,
   };
 }
